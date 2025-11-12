@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -20,12 +21,12 @@ serve(async (req) => {
 
     console.log(`Analyzing website: ${websiteUrl}`);
 
-    const perplexityApiKey = Deno.env.get("PERPLEXITY_API_KEY");
-    if (!perplexityApiKey) {
-      throw new Error("PERPLEXITY_API_KEY not configured");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY not configured");
     }
 
-    // Use Perplexity to analyze the website
+    // Use OpenAI to analyze the website
     const analysisPrompt = `Analyze the website ${websiteUrl} and provide a structured analysis with the following information:
 
 1. Brand Name: The company or brand name
@@ -39,16 +40,16 @@ Format your response as a JSON object with these exact keys: brandName, business
 
 Only return the JSON object, no additional text.`;
 
-    console.log("Calling Perplexity API for website analysis...");
+    console.log("Calling OpenAI API for website analysis...");
 
-    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${perplexityApiKey}`,
+        Authorization: `Bearer ${openaiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "sonar",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -66,12 +67,12 @@ Only return the JSON object, no additional text.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Perplexity API error:", errorText);
-      throw new Error(`Perplexity API error: ${response.status}`);
+      console.error("OpenAI API error:", errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("Perplexity API response received");
+    console.log("OpenAI API response received");
 
     const analysisText = data.choices[0]?.message?.content || "";
     console.log("Analysis text:", analysisText);
