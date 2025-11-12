@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,31 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, LayoutGrid, Undo2, Redo2, Eye, Send, Upload } from "lucide-react";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
-import hljs from "highlight.js";
-import "highlight.js/styles/github.css";
-
-// Configure marked for GitHub-Flavored Markdown
-const renderer = new marked.Renderer();
-const originalCode = renderer.code.bind(renderer);
-renderer.code = function({ text, lang }: { text: string; lang?: string }) {
-  if (lang && hljs.getLanguage(lang)) {
-    try {
-      const highlighted = hljs.highlight(text, { language: lang }).value;
-      return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
-    } catch {
-      // Fall through to default
-    }
-  }
-  return originalCode({ text, lang, escaped: false });
-};
-
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  renderer,
-});
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Blog {
   id: string;
@@ -136,12 +113,6 @@ const BlogEditor = () => {
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const charCount = content.length;
 
-  // Render markdown with syntax highlighting
-  const renderedHTML = useMemo(() => {
-    const raw = marked.parse(content || "") as string;
-    return DOMPurify.sanitize(raw);
-  }, [content]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -225,10 +196,11 @@ const BlogEditor = () => {
           />
           
           {isPreviewMode ? (
-            <div 
-              className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: renderedHTML }}
-            />
+            <div className="prose prose-lg max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
+            </div>
           ) : (
             <Textarea
               value={content}
