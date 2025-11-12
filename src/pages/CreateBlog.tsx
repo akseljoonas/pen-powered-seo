@@ -15,7 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 interface ToneSample {
   id: string;
   title: string;
-  content: string;
+  content: string | null;
+  url: string | null;
 }
 
 const CreateBlog = () => {
@@ -23,11 +24,11 @@ const CreateBlog = () => {
   const [currentKeyword, setCurrentKeyword] = useState("");
   const [competitorUrls, setCompetitorUrls] = useState<string[]>(["", "", ""]);
   const [toneSamples, setToneSamples] = useState<ToneSample[]>([]);
-  const [selectedToneSample, setSelectedToneSample] = useState<string>("");
+  const [selectedToneSamples, setSelectedToneSamples] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newToneTitle, setNewToneTitle] = useState("");
-  const [newToneContent, setNewToneContent] = useState("");
+  const [newToneUrl, setNewToneUrl] = useState("");
   const [isSavingTone, setIsSavingTone] = useState(false);
   const navigate = useNavigate();
 
@@ -72,8 +73,8 @@ const CreateBlog = () => {
   };
 
   const handleAddToneSample = async () => {
-    if (!newToneTitle.trim() || !newToneContent.trim()) {
-      toast.error("Please fill in both title and content");
+    if (!newToneTitle.trim() || !newToneUrl.trim()) {
+      toast.error("Please fill in both title and blog URL");
       return;
     }
 
@@ -88,7 +89,7 @@ const CreateBlog = () => {
         .insert({
           user_id: user.id,
           title: newToneTitle.trim(),
-          content: newToneContent.trim(),
+          url: newToneUrl.trim(),
         })
         .select()
         .single();
@@ -97,9 +98,9 @@ const CreateBlog = () => {
 
       toast.success("Tone sample added successfully!");
       setToneSamples([data, ...toneSamples]);
-      setSelectedToneSample(data.id);
+      setSelectedToneSamples([...selectedToneSamples, data.id]);
       setNewToneTitle("");
-      setNewToneContent("");
+      setNewToneUrl("");
       setIsDialogOpen(false);
     } catch (error: any) {
       console.error("Error adding tone sample:", error);
@@ -121,21 +122,17 @@ const CreateBlog = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Get the selected tone sample content
-      let toneSampleContent = "";
-      if (selectedToneSample) {
-        const sample = toneSamples.find(s => s.id === selectedToneSample);
-        if (sample) {
-          toneSampleContent = sample.content;
-        }
-      }
+      // Get the selected tone sample URLs
+      const toneSampleUrls = selectedToneSamples
+        .map(id => toneSamples.find(s => s.id === id)?.url)
+        .filter(url => url && url.trim() !== "");
 
       // Call the edge function to generate the blog
       const { data, error } = await supabase.functions.invoke("generate-blog", {
         body: {
           keywords,
           competitorUrls: competitorUrls.filter(url => url.trim() !== ""),
-          toneSample: toneSampleContent,
+          toneSampleUrls,
         },
       });
 
@@ -244,69 +241,80 @@ const CreateBlog = () => {
           <Card className="p-6">
             <Label className="text-lg font-semibold mb-4 block">Tone of Voice</Label>
             <p className="text-sm text-muted-foreground mb-4">
-              Select a previous blog to match your writing style (optional)
+              Select up to 3 of your existing blogs to match your writing style (optional)
             </p>
-            <div className="flex gap-2">
-              <Select value={selectedToneSample} onValueChange={setSelectedToneSample}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a tone sample..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {toneSamples.map((sample) => (
-                    <SelectItem key={sample.id} value={sample.id}>
-                      {sample.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Tone of Voice Sample</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="tone-title">Title</Label>
-                      <Input
-                        id="tone-title"
-                        placeholder="e.g., Professional Blog Style"
-                        value={newToneTitle}
-                        onChange={(e) => setNewToneTitle(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="tone-content">Sample Content</Label>
-                      <Textarea
-                        id="tone-content"
-                        placeholder="Paste a sample of your writing style here..."
-                        value={newToneContent}
-                        onChange={(e) => setNewToneContent(e.target.value)}
-                        rows={8}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleAddToneSample}
-                      disabled={isSavingTone}
-                      className="w-full"
-                    >
-                      {isSavingTone ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Add Tone Sample"
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+            <div className="space-y-3 mb-4">
+              {toneSamples.map((sample) => (
+                <label key={sample.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedToneSamples.includes(sample.id)}
+                    onChange={(e) => {
+                      if (e.target.checked && selectedToneSamples.length < 3) {
+                        setSelectedToneSamples([...selectedToneSamples, sample.id]);
+                      } else if (!e.target.checked) {
+                        setSelectedToneSamples(selectedToneSamples.filter(id => id !== sample.id));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{sample.title}</span>
+                  {sample.url && (
+                    <span className="text-xs text-muted-foreground truncate max-w-xs">
+                      ({sample.url})
+                    </span>
+                  )}
+                </label>
+              ))}
             </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Blog URL for Tone of Voice
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Tone of Voice Sample</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="tone-title">Title</Label>
+                    <Input
+                      id="tone-title"
+                      placeholder="e.g., My Professional Blog"
+                      value={newToneTitle}
+                      onChange={(e) => setNewToneTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tone-url">Blog URL</Label>
+                    <Input
+                      id="tone-url"
+                      type="url"
+                      placeholder="https://yourblog.com/example-post"
+                      value={newToneUrl}
+                      onChange={(e) => setNewToneUrl(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddToneSample}
+                    disabled={isSavingTone}
+                    className="w-full"
+                  >
+                    {isSavingTone ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Add Tone Sample"
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </Card>
 
           {/* Generate Button */}
