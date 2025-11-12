@@ -13,15 +13,73 @@ serve(async (req) => {
   try {
     const { keywords, competitorUrls, toneSample } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    if (!PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY is not configured");
+    }
+
+    // Research each keyword with Perplexity to get up-to-date information
+    console.log("Researching keywords with Perplexity...");
+    const keywordResearch: Record<string, string> = {};
+
+    for (const keyword of keywords) {
+      try {
+        const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-sonar-large-128k-online',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.'
+              },
+              {
+                role: 'user',
+                content: `Research and provide an up-to-date summary about: ${keyword}. Include latest trends, statistics, best practices, and recent developments.`
+              }
+            ],
+            temperature: 0.2,
+            top_p: 0.9,
+            max_tokens: 1000,
+            search_recency_filter: 'month',
+          }),
+        });
+
+        if (perplexityResponse.ok) {
+          const perplexityData = await perplexityResponse.json();
+          keywordResearch[keyword] = perplexityData.choices[0].message.content;
+          console.log(`Research completed for keyword: ${keyword}`);
+        } else {
+          console.error(`Perplexity API error for keyword ${keyword}:`, perplexityResponse.status);
+          keywordResearch[keyword] = "Research unavailable";
+        }
+      } catch (error) {
+        console.error(`Error researching keyword ${keyword}:`, error);
+        keywordResearch[keyword] = "Research unavailable";
+      }
     }
 
     // Build the prompt for blog generation
     let prompt = `You are an expert SEO content writer. Generate a high-quality, SEO-optimized blog post with the following requirements:
 
 Target Keywords: ${keywords.join(", ")}
+
+UP-TO-DATE KEYWORD RESEARCH:
+${Object.entries(keywordResearch).map(([keyword, research]) => `
+Keyword: ${keyword}
+Latest Information:
+${research}
+---
+`).join("\n")}
 
 `;
 
@@ -38,12 +96,13 @@ ${toneSample.substring(0, 1000)}...
     }
 
     prompt += `\nGenerate a comprehensive blog post that:
-1. Naturally incorporates the target keywords
-2. Provides unique insights and value
-3. Uses engaging headings and subheadings
-4. Includes actionable takeaways
-5. Is approximately 1500-2000 words
-6. Has a compelling introduction and conclusion
+1. Uses the UP-TO-DATE KEYWORD RESEARCH above to include latest trends, statistics, and developments
+2. Naturally incorporates the target keywords throughout the content
+3. Provides unique insights and value beyond competitor content
+4. Uses engaging headings and subheadings
+5. Includes actionable takeaways
+6. Is approximately 1500-2000 words
+7. Has a compelling introduction and conclusion
 
 Return ONLY a JSON object with this structure:
 {
