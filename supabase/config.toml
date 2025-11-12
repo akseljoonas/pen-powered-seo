@@ -1,0 +1,4 @@
+project_id = "kivudvdptxyqiswjvpxi"
+
+[functions.generate-blog]
+verify_jwt = true
