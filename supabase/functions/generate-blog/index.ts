@@ -38,19 +38,32 @@ serve(async (req) => {
           body: JSON.stringify({
             model: "sonar-deep-research",
             messages: [
-              {
-                role: "system",
-                content:
-                  "You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.",
-              },
+              // {
+              //   role: "system",
+              //   content:
+              //     "You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.",
+              // },
               {
                 role: "user",
-                content: `Research and provide an up-to-date summary about: ${keyword}. Include latest trends, statistics, best practices, and recent developments.`,
+                content: `Analyze ALL of keyword: ${keyword}  features, functionality, and pricing as seen on their official page (only use official sources like their website, docs, and help center):
+
+For general product info:
+Analyze all of the key most popular and highlighted features and what the do
+Analyze the product's ICP (company industries, sizes, employee roles)
+Analyze the differentiator of [platform] compared to it's top 3 competitors ( you can use review sites and other sources only for this task)
+
+For pricing:
+Get the full pricing page content and help/FAQ/billing docs.
+Do a detailed breakdown of all pricing tiers, including add-ons, usage-basis, extra charges, and hidden caveats/limitations.
+List all advanced billable events, edge-case fees, and upsell triggers
+Calculate example prices for multiple volume/usage levels if relevant.
+Give a feature by feature for every plan
+Extract all FAQs from their pricing page as bulletpoints.
+List wether they offer any discounts, free plans, or free trials (only based on official information)
+Use only Markdown for tables, bulletpoints, and clarity. Format everything in your answer. Don't give me any fiels.`,
               },
             ],
-            temperature: 0.2,
-            top_p: 0.9,
-            max_tokens: 1000,
+            max_tokens: 10000,
             search_recency_filter: "month",
           }),
         });
