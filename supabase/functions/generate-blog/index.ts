@@ -29,28 +29,29 @@ serve(async (req) => {
 
     for (const keyword of keywords) {
       try {
-        const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
+        const perplexityResponse = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: 'llama-3.1-sonar-large-128k-online',
+            model: "sonar-deep-research",
             messages: [
               {
-                role: 'system',
-                content: 'You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.'
+                role: "system",
+                content:
+                  "You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.",
               },
               {
-                role: 'user',
-                content: `Research and provide an up-to-date summary about: ${keyword}. Include latest trends, statistics, best practices, and recent developments.`
-              }
+                role: "user",
+                content: `Research and provide an up-to-date summary about: ${keyword}. Include latest trends, statistics, best practices, and recent developments.`,
+              },
             ],
             temperature: 0.2,
             top_p: 0.9,
             max_tokens: 1000,
-            search_recency_filter: 'month',
+            search_recency_filter: "month",
           }),
         });
 
@@ -74,12 +75,16 @@ serve(async (req) => {
 Target Keywords: ${keywords.join(", ")}
 
 UP-TO-DATE KEYWORD RESEARCH:
-${Object.entries(keywordResearch).map(([keyword, research]) => `
+${Object.entries(keywordResearch)
+  .map(
+    ([keyword, research]) => `
 Keyword: ${keyword}
 Latest Information:
 ${research}
 ---
-`).join("\n")}
+`,
+  )
+  .join("\n")}
 
 `;
 
@@ -146,23 +151,23 @@ Return ONLY a JSON object with this structure:
     try {
       // Try to extract JSON from markdown code blocks if present
       let jsonText = generatedText;
-      
+
       // Remove markdown code block markers
       const codeBlockMatch = generatedText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
       if (codeBlockMatch) {
         jsonText = codeBlockMatch[1].trim();
       }
-      
+
       // Find JSON object boundaries
-      const startIdx = jsonText.indexOf('{');
-      const endIdx = jsonText.lastIndexOf('}');
-      
+      const startIdx = jsonText.indexOf("{");
+      const endIdx = jsonText.lastIndexOf("}");
+
       if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
         jsonText = jsonText.substring(startIdx, endIdx + 1);
       }
-      
+
       result = JSON.parse(jsonText);
-      
+
       // Validate result has required fields
       if (!result.title || !result.content) {
         throw new Error("Missing required fields in response");
@@ -172,11 +177,11 @@ Return ONLY a JSON object with this structure:
       // If parsing fails, try to extract title and content manually
       const titleMatch = generatedText.match(/"title"\s*:\s*"([^"]+)"/);
       const contentMatch = generatedText.match(/"content"\s*:\s*"([\s\S]+?)"\s*}/);
-      
+
       if (titleMatch && contentMatch) {
         result = {
           title: titleMatch[1],
-          content: contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+          content: contentMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"'),
         };
       } else {
         // Last resort: use the full text as content
@@ -192,12 +197,9 @@ Return ONLY a JSON object with this structure:
     });
   } catch (error) {
     console.error("Error in generate-blog function:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
