@@ -71,6 +71,35 @@ const CreateBlog = () => {
     setCompetitorUrls(newUrls);
   };
 
+  const pullFromAhrefs = () => {
+    setCompetitorUrls([
+      "https://www.customerly.io/blog/intercom-pricing",
+      "https://www.gptbots.ai/blog/intercom-fin-pricing",
+      "https://www.bolddesk.com/blogs/intercom-pricing"
+    ]);
+    toast.success("URLs pulled from Ahrefs");
+  };
+
+  const pullFromWebsite = () => {
+    setNewToneTitle("Voiceflow Pricing Page");
+    setNewToneContent(`Voiceflow is the leading platform for building AI agents that deliver real business value. Our pricing is designed to scale with your needs, from small teams to enterprise organizations.
+
+**Sandbox Plan - Free Forever**
+Perfect for experimenting and building your first AI agent. Includes unlimited messages in development, basic integrations, and community support.
+
+**Pro Plan - $50/month**
+For teams ready to deploy production AI agents. Includes 10,000 monthly interactions, advanced integrations, priority support, and custom branding.
+
+**Team Plan - $625/month**
+Built for growing organizations. Includes 100,000 monthly interactions, dedicated account manager, SLA guarantees, and advanced analytics.
+
+**Enterprise Plan - Custom Pricing**
+Tailored solutions for large-scale deployments. Includes unlimited interactions, white-glove onboarding, custom integrations, and 24/7 premium support.
+
+Every plan includes our visual flow builder, knowledge base integration, and robust analytics to measure agent performance. Start free and scale as you grow.`);
+    toast.success("Content pulled from website");
+  };
+
   const handleAddToneSample = async () => {
     if (!newToneTitle.trim() || !newToneContent.trim()) {
       toast.error("Please fill in both title and content");
@@ -270,6 +299,15 @@ const CreateBlog = () => {
                 />
               ))}
             </div>
+            
+            <div className="mt-4 flex justify-end">
+              <Button onClick={pullFromAhrefs} variant="outline" size="sm" className="gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6.25 4a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0v-5.5a.75.75 0 0 1 .75-.75zm5 0a.75.75 0 0 1 .75.75v14.5a.75.75 0 0 1-1.5 0V4.75a.75.75 0 0 1 .75-.75zm5.5 2a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-1.5 0V6.75a.75.75 0 0 1 .75-.75zm5.5 1a.75.75 0 0 1 .75.75v11.5a.75.75 0 0 1-1.5 0V7.75a.75.75 0 0 1 .75-.75z"/>
+                </svg>
+                Pull from Ahrefs
+              </Button>
+            </div>
           </Card>
 
           {/* Tone Sample Selection */}
@@ -328,9 +366,14 @@ const CreateBlog = () => {
                     </div>
                     <div>
                       <Label htmlFor="tone-content">Sample Content</Label>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Paste an example of your writing that represents your brand voice
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">
+                          Paste an example of your writing that represents your brand voice
+                        </p>
+                        <Button onClick={pullFromWebsite} variant="ghost" size="sm" className="h-7">
+                          Pull from website
+                        </Button>
+                      </div>
                       <Textarea
                         id="tone-content"
                         placeholder="Paste your writing sample here..."
