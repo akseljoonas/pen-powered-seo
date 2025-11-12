@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, LayoutGrid, Undo2, Redo2, Eye, Send, Upload } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Blog {
   id: string;
@@ -29,6 +31,7 @@ const BlogEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("post");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -153,8 +156,12 @@ const BlogEditor = () => {
               {charCount} characters
             </div>
 
-            <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-              Preview
+            <Button 
+              variant="outline" 
+              onClick={() => setIsPreviewMode(!isPreviewMode)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              {isPreviewMode ? "Edit" : "Preview"}
             </Button>
 
             <Button 
@@ -188,12 +195,20 @@ const BlogEditor = () => {
             className="text-5xl font-bold border-0 p-0 mb-8 focus-visible:ring-0 bg-transparent"
           />
           
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Click here to start writing..."
-            className="min-h-[600px] text-base border-0 p-0 resize-none focus-visible:ring-0 bg-transparent"
-          />
+          {isPreviewMode ? (
+            <div className="prose prose-lg max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Click here to start writing..."
+              className="min-h-[600px] text-base border-0 p-0 resize-none focus-visible:ring-0 bg-transparent"
+            />
+          )}
         </div>
 
         {/* Right Sidebar */}
