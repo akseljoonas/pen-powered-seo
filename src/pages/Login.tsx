@@ -29,8 +29,20 @@ const Login = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Welcome back!");
-      navigate("/dashboard");
+      // Check if user has completed onboarding
+      const { data: brandProfile } = await supabase
+        .from("brand_profiles")
+        .select("id")
+        .eq("user_id", data.user.id)
+        .single();
+
+      if (!brandProfile) {
+        toast.success("Welcome back! Let's complete your setup...");
+        navigate("/onboarding");
+      } else {
+        toast.success("Welcome back!");
+        navigate("/dashboard");
+      }
     }
   };
 

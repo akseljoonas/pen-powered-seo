@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      author_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          description: string | null
+          first_name: string
+          id: string
+          last_name: string
+          position: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          position?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          position?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blog_categories: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blogs: {
         Row: {
           content: string | null
@@ -44,6 +104,54 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      brand_profiles: {
+        Row: {
+          benefits: string | null
+          brand_name: string
+          business_description: string | null
+          created_at: string
+          id: string
+          industry: string | null
+          language: string | null
+          location: string | null
+          target_audience: string | null
+          tone_of_voice: string | null
+          updated_at: string
+          user_id: string
+          website_url: string
+        }
+        Insert: {
+          benefits?: string | null
+          brand_name: string
+          business_description?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          language?: string | null
+          location?: string | null
+          target_audience?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id: string
+          website_url: string
+        }
+        Update: {
+          benefits?: string | null
+          brand_name?: string
+          business_description?: string | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          language?: string | null
+          location?: string | null
+          target_audience?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string
         }
         Relationships: []
       }
@@ -78,24 +186,27 @@ export type Database = {
       }
       tone_samples: {
         Row: {
-          content: string
+          content: string | null
           created_at: string
           id: string
           title: string
+          url: string | null
           user_id: string
         }
         Insert: {
-          content: string
+          content?: string | null
           created_at?: string
           id?: string
           title: string
+          url?: string | null
           user_id: string
         }
         Update: {
-          content?: string
+          content?: string | null
           created_at?: string
           id?: string
           title?: string
+          url?: string | null
           user_id?: string
         }
         Relationships: []

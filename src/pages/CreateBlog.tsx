@@ -136,6 +136,7 @@ const CreateBlog = () => {
           keywords,
           competitorUrls: competitorUrls.filter(url => url.trim() !== ""),
           toneSample: toneSampleContent,
+          userId: user.id,
         },
       });
 

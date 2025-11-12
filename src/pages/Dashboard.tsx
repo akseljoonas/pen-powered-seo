@@ -24,14 +24,26 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkAuth();
+    checkAuthAndOnboarding();
     fetchBlogs();
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuthAndOnboarding = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/login");
+      return;
+    }
+
+    // Check if user has completed onboarding
+    const { data: brandProfile } = await supabase
+      .from("brand_profiles")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (!brandProfile) {
+      navigate("/onboarding");
     }
   };
 

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,9 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { keywords, competitorUrls, toneSample } = await req.json();
+    const { keywords, competitorUrls, toneSample, userId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -21,6 +24,22 @@ serve(async (req) => {
 
     if (!PERPLEXITY_API_KEY) {
       throw new Error("PERPLEXITY_API_KEY is not configured");
+    }
+
+    // Initialize Supabase client to fetch brand profile
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    
+    // Fetch brand profile if userId provided
+    let brandProfile = null;
+    if (userId) {
+      const { data } = await supabase
+        .from('brand_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      brandProfile = data;
+      console.log('Brand profile loaded:', brandProfile?.brand_name);
     }
 
     // Research each keyword with Perplexity to get up-to-date information
@@ -38,29 +57,9 @@ serve(async (req) => {
           body: JSON.stringify({
             model: "sonar-deep-research",
             messages: [
-              // {
-              //   role: "system",
-              //   content:
-              //     "You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.",
-              // },
               {
                 role: "user",
-                content: `Analyze ALL of keyword: ${keyword}  features, functionality, and pricing as seen on their official page (only use official sources like their website, docs, and help center):
-
-For general product info:
-Analyze all of the key most popular and highlighted features and what the do
-Analyze the product's ICP (company industries, sizes, employee roles)
-Analyze the differentiator of [platform] compared to it's top 3 competitors ( you can use review sites and other sources only for this task)
-
-For pricing:
-Get the full pricing page content and help/FAQ/billing docs.
-Do a detailed breakdown of all pricing tiers, including add-ons, usage-basis, extra charges, and hidden caveats/limitations.
-List all advanced billable events, edge-case fees, and upsell triggers
-Calculate example prices for multiple volume/usage levels if relevant.
-Give a feature by feature for every plan
-Extract all FAQs from their pricing page as bulletpoints.
-List wether they offer any discounts, free plans, or free trials (only based on official information)
-Use only Markdown for tables, bulletpoints, and clarity. Format everything in your answer. Don't give me any fiels.`,
+                content: `Research the keyword "${keyword}" and provide comprehensive information including latest trends, statistics, best practices, and relevant developments. Focus on actionable insights.`,
               },
             ],
             max_tokens: 10000,
@@ -87,7 +86,24 @@ Use only Markdown for tables, bulletpoints, and clarity. Format everything in yo
 
 Target Keywords: ${keywords.join(", ")}
 
-UP-TO-DATE KEYWORD RESEARCH:
+`;
+
+    // Add brand context if available
+    if (brandProfile) {
+      prompt += `BRAND CONTEXT:
+Brand Name: ${brandProfile.brand_name}
+Industry: ${brandProfile.industry}
+Business Description: ${brandProfile.business_description}
+Target Audience: ${brandProfile.target_audience}
+Key Benefits: ${brandProfile.benefits}
+Tone of Voice: ${brandProfile.tone_of_voice}
+
+Write this blog post FOR ${brandProfile.brand_name}, speaking directly to their target audience (${brandProfile.target_audience}). Match the ${brandProfile.tone_of_voice} tone throughout.
+
+`;
+    }
+
+    prompt += `UP-TO-DATE KEYWORD RESEARCH:
 ${Object.entries(keywordResearch)
   .map(
     ([keyword, research]) => `
@@ -116,11 +132,12 @@ ${toneSample.substring(0, 1000)}...
     prompt += `\nGenerate a comprehensive blog post that:
 1. Uses the UP-TO-DATE KEYWORD RESEARCH above to include latest trends, statistics, and developments
 2. Naturally incorporates the target keywords throughout the content
-3. Provides unique insights and value beyond competitor content
-4. Uses engaging headings and subheadings
-5. Includes actionable takeaways
-6. Is approximately 1500-2000 words
-7. Has a compelling introduction and conclusion
+3. ${brandProfile ? `Speaks to ${brandProfile.brand_name}'s audience (${brandProfile.target_audience})` : 'Provides unique insights and value'}
+4. ${brandProfile ? `Maintains a ${brandProfile.tone_of_voice} tone consistently` : 'Uses an engaging, professional tone'}
+5. Uses engaging headings and subheadings
+6. Includes actionable takeaways
+7. Is approximately 1500-2000 words
+8. Has a compelling introduction and conclusion
 
 Return ONLY a JSON object with this structure:
 {

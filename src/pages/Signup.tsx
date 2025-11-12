@@ -29,8 +29,8 @@ const Signup = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Redirecting to dashboard...");
-      navigate("/dashboard");
+      toast.success("Account created! Let's set up your blog...");
+      navigate("/onboarding");
     }
   };
 
