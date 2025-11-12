@@ -129,15 +129,8 @@ const BlogEditor = () => {
 
       toast.success("Blog generated successfully!");
       
-      // Update state and URL
-      setBlog(blog);
-      setTitle(blog.title);
-      setContent(parsedContent);
-      setTargetKeywords(blog.keywords?.join(", ") || "");
-      setIsLoading(false);
-      
-      // Replace URL without navigation
-      window.history.replaceState({}, '', `/editor/${blog.id}`);
+      // Navigate to the newly created blog
+      navigate(`/editor/${blog.id}`, { replace: true });
     } catch (error: any) {
       console.error("Error generating blog:", error);
       toast.error(error.message || "Failed to generate blog");
