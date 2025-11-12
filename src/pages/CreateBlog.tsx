@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, X, Sparkles } from "lucide-react";
+import { Loader2, Plus, X, Sparkles, Target, Link2, Mic } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -181,112 +181,162 @@ const CreateBlog = () => {
     <div className="min-h-screen bg-background">
       <Navbar isAuthenticated />
       <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Create New Blog</h1>
-          <p className="text-muted-foreground">
-            Provide details to generate your SEO-optimized content
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold mb-3">Create AI-Powered Content</h1>
+          <p className="text-muted-foreground text-lg">
+            Generate SEO-optimized blog posts that match your brand voice and outrank competitors
           </p>
         </div>
 
         <div className="space-y-6">
           {/* Keywords Section */}
-          <Card className="p-6">
-            <Label className="text-lg font-semibold mb-4 block">Target Keywords</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add keywords you want to rank for (max 10)
-            </p>
+          <Card className="p-6 border-border hover:border-primary/20 transition-colors">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-lg font-semibold">Target Keywords</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Add up to 10 keywords you want to rank for. We'll research and incorporate them naturally.
+                </p>
+              </div>
+            </div>
+            
             <div className="flex gap-2 mb-4">
               <Input
-                placeholder="Enter a keyword..."
+                placeholder="e.g., content marketing strategy"
                 value={currentKeyword}
                 onChange={(e) => setCurrentKeyword(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && addKeyword()}
+                className="bg-background"
               />
-              <Button onClick={addKeyword} disabled={keywords.length >= 10}>
-                <Plus className="h-4 w-4" />
+              <Button onClick={addKeyword} disabled={keywords.length >= 10} variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {keywords.map((keyword, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full"
-                >
-                  {keyword}
-                  <button onClick={() => removeKeyword(idx)}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
+            
+            {keywords.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                {keywords.map((keyword, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-md text-sm font-medium"
+                  >
+                    {keyword}
+                    <button 
+                      onClick={() => removeKeyword(idx)}
+                      className="hover:bg-primary/20 rounded transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {keywords.length === 0 && (
+              <div className="text-center p-8 bg-muted/30 rounded-lg border-2 border-dashed border-border">
+                <p className="text-sm text-muted-foreground">No keywords added yet. Start by adding your first keyword above.</p>
+              </div>
+            )}
           </Card>
 
           {/* Competitor URLs Section */}
-          <Card className="p-6">
-            <Label className="text-lg font-semibold mb-4 block">Competitor Blog URLs</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add up to 3 competitor blog URLs for analysis (optional)
-            </p>
+          <Card className="p-6 border-border hover:border-primary/20 transition-colors">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Link2 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-lg font-semibold">Competitor Analysis</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Optional: Add competitor blog URLs to analyze what's working and create better content.
+                </p>
+              </div>
+            </div>
+            
             <div className="space-y-3">
               {competitorUrls.map((url, idx) => (
                 <Input
                   key={idx}
-                  placeholder={`Competitor URL ${idx + 1}`}
+                  placeholder={`https://competitor-blog-${idx + 1}.com/article`}
                   value={url}
                   onChange={(e) => updateCompetitorUrl(idx, e.target.value)}
                   type="url"
+                  className="bg-background"
                 />
               ))}
             </div>
           </Card>
 
           {/* Tone Sample Selection */}
-          <Card className="p-6">
-            <Label className="text-lg font-semibold mb-4 block">Tone of Voice</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select a previous blog to match your writing style (optional)
-            </p>
+          <Card className="p-6 border-border hover:border-primary/20 transition-colors">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Mic className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-lg font-semibold">Brand Voice & Style</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Optional: Choose a writing sample to match your unique tone and style.
+                </p>
+              </div>
+            </div>
+            
             <div className="flex gap-2">
               <Select value={selectedToneSample} onValueChange={setSelectedToneSample}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Select a tone sample..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {toneSamples.map((sample) => (
-                    <SelectItem key={sample.id} value={sample.id}>
-                      {sample.title}
-                    </SelectItem>
-                  ))}
+                  {toneSamples.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground">No tone samples yet</div>
+                  ) : (
+                    toneSamples.map((sample) => (
+                      <SelectItem key={sample.id} value={sample.id}>
+                        {sample.title}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline">
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 mr-1" />
+                    New
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Add Tone of Voice Sample</DialogTitle>
+                    <DialogTitle>Add Brand Voice Sample</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="tone-title">Title</Label>
+                      <Label htmlFor="tone-title">Sample Name</Label>
                       <Input
                         id="tone-title"
-                        placeholder="e.g., Professional Blog Style"
+                        placeholder="e.g., Casual & Friendly Style"
                         value={newToneTitle}
                         onChange={(e) => setNewToneTitle(e.target.value)}
+                        className="mt-2"
                       />
                     </div>
                     <div>
                       <Label htmlFor="tone-content">Sample Content</Label>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Paste an example of your writing that represents your brand voice
+                      </p>
                       <Textarea
                         id="tone-content"
-                        placeholder="Paste a sample of your writing style here..."
+                        placeholder="Paste your writing sample here..."
                         value={newToneContent}
                         onChange={(e) => setNewToneContent(e.target.value)}
-                        rows={8}
+                        rows={10}
+                        className="font-mono text-sm"
                       />
                     </div>
                     <Button
@@ -300,7 +350,7 @@ const CreateBlog = () => {
                           Saving...
                         </>
                       ) : (
-                        "Add Tone Sample"
+                        "Save Tone Sample"
                       )}
                     </Button>
                   </div>
@@ -312,22 +362,28 @@ const CreateBlog = () => {
           {/* Generate Button */}
           <Button
             size="lg"
-            className="w-full bg-gradient-primary hover:opacity-90"
+            className="w-full bg-primary hover:bg-primary/90 h-14 text-base font-semibold"
             onClick={handleGenerate}
             disabled={isGenerating || keywords.length === 0}
           >
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Researching Keywords & Generating Blog...
+                Researching keywords & crafting your blog...
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-5 w-5" />
-                Generate Blog
+                Generate SEO Blog Post
               </>
             )}
           </Button>
+          
+          {keywords.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground">
+              Add at least one keyword to get started
+            </p>
+          )}
         </div>
       </div>
     </div>

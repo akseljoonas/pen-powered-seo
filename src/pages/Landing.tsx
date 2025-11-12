@@ -12,13 +12,13 @@ const Landing = () => {
       
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
                 Create High-Quality
-                <span className="bg-gradient-primary bg-clip-text text-transparent"> SEO Blogs </span>
+                <span className="text-primary"> SEO Blogs </span>
                 with AI
               </h1>
               <p className="text-xl text-muted-foreground">
@@ -26,7 +26,7 @@ const Landing = () => {
               </p>
               <div className="flex gap-4">
                 <Link to="/signup">
-                  <Button size="lg" className="bg-gradient-primary hover:opacity-90">
+                  <Button size="lg" className="bg-primary hover:bg-primary/90">
                     <Sparkles className="mr-2 h-5 w-5" />
                     Start Creating Free
                   </Button>
@@ -106,7 +106,7 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <Card className="p-12 bg-gradient-hero text-center">
+          <Card className="p-12 bg-primary text-center">
             <h2 className="text-4xl font-bold mb-4 text-primary-foreground">
               Ready to Transform Your Content Strategy?
             </h2>
@@ -114,7 +114,7 @@ const Landing = () => {
               Join thousands of creators who are already using BlogForge AI to create SEO-optimized content
             </p>
             <Link to="/signup">
-              <Button size="lg" variant="secondary" className="shadow-lg">
+              <Button size="lg" variant="secondary" className="shadow-lg bg-background text-foreground hover:bg-background/90">
                 Get Started Now - It's Free
               </Button>
             </Link>
