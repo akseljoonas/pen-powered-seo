@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, X, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface ToneSample {
   id: string;
@@ -24,6 +25,10 @@ const CreateBlog = () => {
   const [toneSamples, setToneSamples] = useState<ToneSample[]>([]);
   const [selectedToneSample, setSelectedToneSample] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newToneTitle, setNewToneTitle] = useState("");
+  const [newToneContent, setNewToneContent] = useState("");
+  const [isSavingTone, setIsSavingTone] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,6 +69,44 @@ const CreateBlog = () => {
     const newUrls = [...competitorUrls];
     newUrls[index] = value;
     setCompetitorUrls(newUrls);
+  };
+
+  const handleAddToneSample = async () => {
+    if (!newToneTitle.trim() || !newToneContent.trim()) {
+      toast.error("Please fill in both title and content");
+      return;
+    }
+
+    setIsSavingTone(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("tone_samples")
+        .insert({
+          user_id: user.id,
+          title: newToneTitle.trim(),
+          content: newToneContent.trim(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Tone sample added successfully!");
+      setToneSamples([data, ...toneSamples]);
+      setSelectedToneSample(data.id);
+      setNewToneTitle("");
+      setNewToneContent("");
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error adding tone sample:", error);
+      toast.error(error.message || "Failed to add tone sample");
+    } finally {
+      setIsSavingTone(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -203,18 +246,67 @@ const CreateBlog = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Select a previous blog to match your writing style (optional)
             </p>
-            <Select value={selectedToneSample} onValueChange={setSelectedToneSample}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a tone sample..." />
-              </SelectTrigger>
-              <SelectContent>
-                {toneSamples.map((sample) => (
-                  <SelectItem key={sample.id} value={sample.id}>
-                    {sample.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={selectedToneSample} onValueChange={setSelectedToneSample}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tone sample..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {toneSamples.map((sample) => (
+                    <SelectItem key={sample.id} value={sample.id}>
+                      {sample.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Tone of Voice Sample</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="tone-title">Title</Label>
+                      <Input
+                        id="tone-title"
+                        placeholder="e.g., Professional Blog Style"
+                        value={newToneTitle}
+                        onChange={(e) => setNewToneTitle(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="tone-content">Sample Content</Label>
+                      <Textarea
+                        id="tone-content"
+                        placeholder="Paste a sample of your writing style here..."
+                        value={newToneContent}
+                        onChange={(e) => setNewToneContent(e.target.value)}
+                        rows={8}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAddToneSample}
+                      disabled={isSavingTone}
+                      className="w-full"
+                    >
+                      {isSavingTone ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Add Tone Sample"
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </Card>
 
           {/* Generate Button */}
