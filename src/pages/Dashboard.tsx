@@ -80,7 +80,7 @@ const Dashboard = () => {
       <Navbar isAuthenticated />
       <div className="container mx-auto px-4 pt-20 pb-12 max-w-7xl">
         <div className="flex justify-between items-center mb-8 mt-4">
-          <h1 className="text-2xl font-semibold text-foreground">Content Editor</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Content</h1>
           <Link to="/create">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Plus className="mr-2 h-4 w-4" />

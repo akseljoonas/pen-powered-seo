@@ -40,8 +40,8 @@ const Login = () => {
       <div className="flex items-center justify-center min-h-screen pt-16 px-4">
         <Card className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to continue creating amazing content</p>
+            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
+            <p className="text-muted-foreground">Sign in to continue creating content</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">

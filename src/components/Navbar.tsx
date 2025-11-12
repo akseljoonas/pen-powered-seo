@@ -27,7 +27,7 @@ export const Navbar = ({ isAuthenticated }: NavbarProps) => {
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-lg font-semibold hover:opacity-80 transition-opacity">
           <PenTool className="h-5 w-5 text-primary" />
-          <span className="text-foreground">BlogForge AI</span>
+          <span className="text-foreground">Postable</span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -36,18 +36,18 @@ export const Navbar = ({ isAuthenticated }: NavbarProps) => {
               <Link to="/dashboard">
                 <Button variant="ghost" className="text-sm">Dashboard</Button>
               </Link>
-              <Button variant="ghost" onClick={handleLogout} size="sm">
+              <Button variant="ghost" onClick={handleLogout} className="text-sm">
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                Sign out
               </Button>
             </>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" size="sm">Sign In</Button>
+                <Button variant="ghost" className="text-sm">Sign in</Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" className="bg-primary hover:bg-primary/90">Get Started</Button>
+                <Button className="bg-primary hover:bg-primary/90 text-sm">Get started</Button>
               </Link>
             </>
           )}

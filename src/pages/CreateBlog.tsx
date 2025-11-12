@@ -181,12 +181,12 @@ const CreateBlog = () => {
     <div className="min-h-screen bg-background">
       <Navbar isAuthenticated />
       <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold mb-3">Create AI-Powered Content</h1>
-          <p className="text-muted-foreground text-lg">
-            Generate SEO-optimized blog posts that match your brand voice and outrank competitors
-          </p>
-        </div>
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold mb-3">Create AI-Powered Content</h1>
+            <p className="text-muted-foreground text-lg">
+              Generate SEO-optimized blog posts that match your brand voice and outrank competitors
+            </p>
+          </div>
 
         <div className="space-y-6">
           {/* Keywords Section */}
