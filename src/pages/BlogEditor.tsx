@@ -2,13 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
-import { BlogChatWidget } from "@/components/BlogChatWidget";
+import { BlogEditorWithChat } from "@/components/BlogEditorWithChat";
 
 interface Blog {
   id: string;
@@ -117,8 +114,7 @@ const BlogEditor = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar isAuthenticated />
-      <BlogChatWidget blogContent={content} />
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-5xl">
+      <div className="container mx-auto px-4 pt-24 pb-12 max-w-7xl">
         <div className="mb-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -142,38 +138,13 @@ const BlogEditor = () => {
           </div>
         </div>
 
-        <Card className="p-8">
-          <div className="space-y-6">
-            <div>
-              <Input
-                placeholder="Blog Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="text-3xl font-bold border-none px-0 focus-visible:ring-0"
-              />
-            </div>
-
-            {blog?.keywords && blog.keywords.length > 0 && (
-              <div className="flex flex-wrap gap-2 py-4 border-y">
-                {blog.keywords.map((keyword, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full"
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <Textarea
-              placeholder="Start writing your blog content..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[600px] text-lg leading-relaxed border-none px-0 focus-visible:ring-0 resize-none"
-            />
-          </div>
-        </Card>
+        <BlogEditorWithChat
+          title={title}
+          content={content}
+          keywords={blog?.keywords || []}
+          onTitleChange={setTitle}
+          onContentChange={setContent}
+        />
       </div>
     </div>
   );

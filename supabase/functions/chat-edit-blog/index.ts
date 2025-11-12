@@ -11,24 +11,35 @@ serve(async (req) => {
   }
 
   try {
-    const { message, blogContent, conversationHistory } = await req.json();
+    const { message, blogContent, blogTitle, keywords, conversationHistory } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build conversation with context
+    // Build conversation with full context
+    const keywordsText = keywords && keywords.length > 0 ? keywords.join(", ") : "none specified";
+    
     const messages = [
       {
         role: "system",
-        content: `You are an expert blog editor. Help the user edit and improve their blog content. 
-        
-Current blog content:
-${blogContent}
+        content: `You are an expert blog editor and SEO specialist. Help the user edit and improve their blog content.
 
-Provide specific, actionable suggestions. When making edits, explain what you changed and why.
-Be concise but helpful.`
+Current Blog Context:
+- Title: ${blogTitle || "Untitled"}
+- Target Keywords: ${keywordsText}
+- Content: ${blogContent || "No content yet"}
+
+Your role:
+- Provide specific, actionable suggestions for improvements
+- Help with SEO optimization and keyword integration
+- Improve readability, structure, and engagement
+- Suggest better headlines, transitions, and conclusions
+- When suggesting edits, show the improved version using markdown code blocks
+- Be concise but helpful
+
+Remember: The blog is written in Markdown format. When suggesting text changes, provide the complete improved section.`
       },
       ...conversationHistory,
       {
