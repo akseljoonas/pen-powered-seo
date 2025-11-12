@@ -78,27 +78,24 @@ export type Database = {
       }
       tone_samples: {
         Row: {
-          content: string | null
+          content: string
           created_at: string
           id: string
           title: string
-          url: string | null
           user_id: string
         }
         Insert: {
-          content?: string | null
+          content: string
           created_at?: string
           id?: string
           title: string
-          url?: string | null
           user_id: string
         }
         Update: {
-          content?: string | null
+          content?: string
           created_at?: string
           id?: string
           title?: string
-          url?: string | null
           user_id?: string
         }
         Relationships: []

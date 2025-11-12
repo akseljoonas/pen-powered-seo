@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { keywords, competitorUrls, toneSampleUrls } = await req.json();
+    const { keywords, competitorUrls, toneSample } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
@@ -23,83 +23,7 @@ serve(async (req) => {
       throw new Error("PERPLEXITY_API_KEY is not configured");
     }
 
-    // Step 1: Fetch tone of voice blogs
-    console.log("Fetching tone of voice blogs...");
-    const toneSampleContents: string[] = [];
-    
-    if (toneSampleUrls && toneSampleUrls.length > 0) {
-      for (const url of toneSampleUrls) {
-        try {
-          const perplexityResponse = await fetch("https://api.perplexity.ai/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "sonar-deep-research",
-              messages: [
-                {
-                  role: "user",
-                  content: `Extract the complete blog content from this URL: ${url}. Return only the blog text content, including the title, body paragraphs, and any key sections. Format it clearly.`,
-                },
-              ],
-              max_tokens: 10000,
-            }),
-          });
-
-          if (perplexityResponse.ok) {
-            const data = await perplexityResponse.json();
-            toneSampleContents.push(data.choices[0].message.content);
-            console.log(`Fetched tone sample from: ${url}`);
-          } else {
-            console.error(`Failed to fetch tone sample from ${url}:`, perplexityResponse.status);
-          }
-        } catch (error) {
-          console.error(`Error fetching tone sample from ${url}:`, error);
-        }
-      }
-    }
-
-    // Step 2: Fetch competitor blog contents
-    console.log("Fetching competitor blogs...");
-    const competitorContents: string[] = [];
-    
-    if (competitorUrls && competitorUrls.length > 0) {
-      for (const url of competitorUrls) {
-        try {
-          const perplexityResponse = await fetch("https://api.perplexity.ai/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "sonar-deep-research",
-              messages: [
-                {
-                  role: "user",
-                  content: `Extract the complete blog content from this URL: ${url}. Return only the blog text content, including the title, body paragraphs, and key sections. Format it clearly.`,
-                },
-              ],
-              max_tokens: 10000,
-            }),
-          });
-
-          if (perplexityResponse.ok) {
-            const data = await perplexityResponse.json();
-            competitorContents.push(data.choices[0].message.content);
-            console.log(`Fetched competitor blog from: ${url}`);
-          } else {
-            console.error(`Failed to fetch competitor blog from ${url}:`, perplexityResponse.status);
-          }
-        } catch (error) {
-          console.error(`Error fetching competitor blog from ${url}:`, error);
-        }
-      }
-    }
-
-    // Step 3: Research keywords with Perplexity to get up-to-date information
+    // Research each keyword with Perplexity to get up-to-date information
     console.log("Researching keywords with Perplexity...");
     const keywordResearch: Record<string, string> = {};
 
@@ -114,14 +38,19 @@ serve(async (req) => {
           body: JSON.stringify({
             model: "sonar-deep-research",
             messages: [
+              // {
+              //   role: "system",
+              //   content:
+              //     "You are a research assistant. Provide a comprehensive, up-to-date summary of the topic with latest trends, statistics, and developments. Be factual and cite recent information.",
+              // },
               {
                 role: "user",
-                content: `Analyze ALL of keyword: ${keyword} features, functionality, and pricing as seen on their official page (only use official sources like their website, docs, and help center):
+                content: `Analyze ALL of keyword: ${keyword}  features, functionality, and pricing as seen on their official page (only use official sources like their website, docs, and help center):
 
 For general product info:
-Analyze all of the key most popular and highlighted features and what they do
+Analyze all of the key most popular and highlighted features and what the do
 Analyze the product's ICP (company industries, sizes, employee roles)
-Analyze the differentiator of [platform] compared to its top 3 competitors (you can use review sites and other sources only for this task)
+Analyze the differentiator of [platform] compared to it's top 3 competitors ( you can use review sites and other sources only for this task)
 
 For pricing:
 Get the full pricing page content and help/FAQ/billing docs.
@@ -130,8 +59,8 @@ List all advanced billable events, edge-case fees, and upsell triggers
 Calculate example prices for multiple volume/usage levels if relevant.
 Give a feature by feature for every plan
 Extract all FAQs from their pricing page as bulletpoints.
-List whether they offer any discounts, free plans, or free trials (only based on official information)
-Use only Markdown for tables, bulletpoints, and clarity. Format everything in your answer. Don't give me any files.`,
+List wether they offer any discounts, free plans, or free trials (only based on official information)
+Use only Markdown for tables, bulletpoints, and clarity. Format everything in your answer. Don't give me any fiels.`,
               },
             ],
             max_tokens: 10000,
@@ -153,19 +82,12 @@ Use only Markdown for tables, bulletpoints, and clarity. Format everything in yo
       }
     }
 
-    // Step 4: Build the prompt for blog generation using the user's exact structure
-    let prompt = `I want to write a well researched, simple to read SEO blog based on my tone of voice that you get from my existing blogs, relevant information that you find from my competitors' ranking blogs, and some extra research information that I provide you with.
+    // Build the prompt for blog generation
+    let prompt = `You are an expert SEO content writer. Generate a high-quality, SEO-optimized blog post with the following requirements:
 
-I'm going to provide you with ${toneSampleContents.length} blog${toneSampleContents.length !== 1 ? 's' : ''} that I've written for our SEO so you can grasp my style.
-${toneSampleContents.map((content, idx) => `\n=== BLOG ${idx + 1} (Tone of Voice Example) ===\n${content}\n`).join("\n")}
+Target Keywords: ${keywords.join(", ")}
 
-Now I'm going to provide you with some top-ranking competitors' blogs for my target keyword${keywords.length > 1 ? 's' : ''} [${keywords.join(", ")}].
-${competitorContents.length > 0 ? competitorContents.map((content, idx) => `\n=== COMPETITOR BLOG ${idx + 1} ===\n${content}\n`).join("\n") : "No competitor blogs provided."}
-${competitorContents.length === 0 ? "Since no competitor blogs were provided, rely solely on my tone of voice and the provided extra information in the next step." : ""}
-
-Now I'm going to give you the most up-to-date relevant information about this topic:
-
-=== RESEARCH FINDINGS ===
+UP-TO-DATE KEYWORD RESEARCH:
 ${Object.entries(keywordResearch)
   .map(
     ([keyword, research]) => `
@@ -177,17 +99,28 @@ ${research}
   )
   .join("\n")}
 
-If there's any contradictory information between the top-ranking competitor blogs and my research findings above, prioritize the information in the research findings because this is the most up-to-date. But overall try to use both sources and make the most comprehensive byproduct.
+`;
 
-Based on this information, write an SEO blog in a similar style to the ones I've written previously.
+    if (competitorUrls && competitorUrls.length > 0) {
+      prompt += `\nAnalyze and improve upon these competitor blogs:
+${competitorUrls.map((url: string, idx: number) => `${idx + 1}. ${url}`).join("\n")}
+`;
+    }
 
-Requirements:
-- Naturally incorporate the target keywords: ${keywords.join(", ")}
-- Use engaging headings and subheadings (H2, H3, etc.)
-- Include actionable takeaways
-- Approximately 1500-2000 words
-- Use simple, readable language that matches my tone of voice
-- Format the content in GitHub Flavoured Markdown
+    if (toneSample) {
+      prompt += `\nMatch the tone and writing style of this example:
+${toneSample.substring(0, 1000)}...
+`;
+    }
+
+    prompt += `\nGenerate a comprehensive blog post that:
+1. Uses the UP-TO-DATE KEYWORD RESEARCH above to include latest trends, statistics, and developments
+2. Naturally incorporates the target keywords throughout the content
+3. Provides unique insights and value beyond competitor content
+4. Uses engaging headings and subheadings
+5. Includes actionable takeaways
+6. Is approximately 1500-2000 words
+7. Has a compelling introduction and conclusion
 
 Return ONLY a JSON object with this structure:
 {
