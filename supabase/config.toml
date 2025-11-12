@@ -1,4 +1,7 @@
 project_id = "kivudvdptxyqiswjvpxi"
 
 [functions.generate-blog]
-verify_jwt = true
+verify_jwt = false
+
+[functions.chat-edit-blog]
+verify_jwt = false

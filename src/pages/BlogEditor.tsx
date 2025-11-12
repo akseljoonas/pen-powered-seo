@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { BlogChatWidget } from "@/components/BlogChatWidget";
 
 interface Blog {
   id: string;
@@ -116,6 +117,7 @@ const BlogEditor = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar isAuthenticated />
+      <BlogChatWidget blogContent={content} />
       <div className="container mx-auto px-4 pt-24 pb-12 max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>

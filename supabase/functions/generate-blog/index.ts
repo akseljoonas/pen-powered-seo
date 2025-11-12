@@ -82,26 +82,50 @@ Return ONLY a JSON object with this structure:
 
     console.log("Generated text:", generatedText);
 
-    // Parse the JSON response
+    // Parse the JSON response with improved extraction
     let result;
     try {
       // Try to extract JSON from markdown code blocks if present
-      const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/) || 
-                       generatedText.match(/```\n([\s\S]*?)\n```/);
+      let jsonText = generatedText;
       
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[1]);
-      } else {
-        result = JSON.parse(generatedText);
+      // Remove markdown code block markers
+      const codeBlockMatch = generatedText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1].trim();
+      }
+      
+      // Find JSON object boundaries
+      const startIdx = jsonText.indexOf('{');
+      const endIdx = jsonText.lastIndexOf('}');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        jsonText = jsonText.substring(startIdx, endIdx + 1);
+      }
+      
+      result = JSON.parse(jsonText);
+      
+      // Validate result has required fields
+      if (!result.title || !result.content) {
+        throw new Error("Missing required fields in response");
       }
     } catch (parseError) {
       console.error("Error parsing AI response:", parseError);
-      // If parsing fails, create a structured response from the generated text
-      const lines = generatedText.split("\n");
-      result = {
-        title: keywords[0] ? `How to Master ${keywords[0]}` : "Your SEO-Optimized Blog",
-        content: generatedText,
-      };
+      // If parsing fails, try to extract title and content manually
+      const titleMatch = generatedText.match(/"title"\s*:\s*"([^"]+)"/);
+      const contentMatch = generatedText.match(/"content"\s*:\s*"([\s\S]+?)"\s*}/);
+      
+      if (titleMatch && contentMatch) {
+        result = {
+          title: titleMatch[1],
+          content: contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+        };
+      } else {
+        // Last resort: use the full text as content
+        result = {
+          title: keywords[0] ? `How to Master ${keywords[0]}` : "Your SEO-Optimized Blog",
+          content: generatedText,
+        };
+      }
     }
 
     return new Response(JSON.stringify(result), {
