@@ -125,7 +125,7 @@ ${toneSample.substring(0, 1000)}...
 Return ONLY a JSON object with this structure:
 {
   "title": "The blog title (incorporate primary keyword)",
-  "content": "The full blog content in markdown format"
+  "content": "The full blog content in github flavoured markdown format"
 }`;
 
     console.log("Generating blog with Lovable AI...");
