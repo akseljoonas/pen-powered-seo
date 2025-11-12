@@ -144,67 +144,23 @@ Every plan includes our visual flow builder, knowledge base integration, and rob
       return;
     }
 
-    setIsGenerating(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Get the selected tone sample content
-      let toneSampleContent = "";
-      if (selectedToneSample) {
-        const sample = toneSamples.find(s => s.id === selectedToneSample);
-        if (sample) {
-          toneSampleContent = sample.content;
-        }
+    // Get the selected tone sample content
+    let toneSampleContent = "";
+    if (selectedToneSample) {
+      const sample = toneSamples.find(s => s.id === selectedToneSample);
+      if (sample) {
+        toneSampleContent = sample.content;
       }
-
-      // Call the edge function to generate the blog
-      const { data, error } = await supabase.functions.invoke("generate-blog", {
-        body: {
-          keywords,
-          competitorUrls: competitorUrls.filter(url => url.trim() !== ""),
-          toneSample: toneSampleContent,
-          userId: user.id,
-        },
-      });
-
-      if (error) throw error;
-
-      // Create a new blog entry
-      const { data: blog, error: insertError } = await supabase
-        .from("blogs")
-        .insert({
-          user_id: user.id,
-          title: data.title,
-          content: data.content,
-          keywords,
-          status: "draft",
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      // Insert competitor URLs
-      const validUrls = competitorUrls.filter(url => url.trim() !== "");
-      if (validUrls.length > 0) {
-        await supabase.from("competitor_urls").insert(
-          validUrls.map(url => ({
-            blog_id: blog.id,
-            url: url.trim(),
-          }))
-        );
-      }
-
-      toast.success("Blog generated successfully!");
-      navigate(`/editor/${blog.id}`);
-    } catch (error: any) {
-      console.error("Error generating blog:", error);
-      toast.error(error.message || "Failed to generate blog");
-    } finally {
-      setIsGenerating(false);
     }
+
+    // Navigate immediately to editor with generation state
+    navigate("/editor/generating", {
+      state: {
+        keywords,
+        competitorUrls: competitorUrls.filter(url => url.trim() !== ""),
+        toneSampleContent,
+      },
+    });
   };
 
   return (

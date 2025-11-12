@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, LayoutGrid, Undo2, Redo2, Eye, Send, Upload } from "lucide-react";
+import { Loader2, LayoutGrid, Undo2, Redo2, Eye, Send, Upload, CheckCircle2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -23,6 +23,7 @@ interface Blog {
 const BlogEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -32,16 +33,115 @@ const BlogEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("post");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
 
   useEffect(() => {
     checkAuth();
-    fetchBlog();
+    if (id === "generating") {
+      handleGeneration();
+    } else {
+      fetchBlog();
+    }
   }, [id]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/login");
+    }
+  };
+
+  const handleGeneration = async () => {
+    const state = location.state as {
+      keywords: string[];
+      competitorUrls: string[];
+      toneSampleContent: string;
+    };
+
+    if (!state) {
+      navigate("/create");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Step 1: Researching keywords
+      setGenerationStep(1);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 2: Pulling example blogs
+      setGenerationStep(2);
+      
+      // Call the edge function to generate the blog
+      const { data, error } = await supabase.functions.invoke("generate-blog", {
+        body: {
+          keywords: state.keywords,
+          competitorUrls: state.competitorUrls,
+          toneSample: state.toneSampleContent,
+          userId: user.id,
+        },
+      });
+
+      if (error) throw error;
+
+      // Step 3: Writing blog post
+      setGenerationStep(3);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Parse content field if it's JSON string
+      let parsedContent = data.content;
+      if (typeof data.content === 'string') {
+        try {
+          const contentObj = JSON.parse(data.content);
+          parsedContent = contentObj.content || data.content;
+        } catch {
+          // Content is already a string, use as-is
+          parsedContent = data.content;
+        }
+      }
+
+      // Create a new blog entry
+      const { data: blog, error: insertError } = await supabase
+        .from("blogs")
+        .insert({
+          user_id: user.id,
+          title: data.title,
+          content: parsedContent,
+          keywords: state.keywords,
+          status: "draft",
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Insert competitor URLs
+      if (state.competitorUrls.length > 0) {
+        await supabase.from("competitor_urls").insert(
+          state.competitorUrls.map(url => ({
+            blog_id: blog.id,
+            url: url.trim(),
+          }))
+        );
+      }
+
+      toast.success("Blog generated successfully!");
+      
+      // Update state and URL
+      setBlog(blog);
+      setTitle(blog.title);
+      setContent(parsedContent);
+      setTargetKeywords(blog.keywords?.join(", ") || "");
+      setIsLoading(false);
+      
+      // Replace URL without navigation
+      window.history.replaceState({}, '', `/editor/${blog.id}`);
+    } catch (error: any) {
+      console.error("Error generating blog:", error);
+      toast.error(error.message || "Failed to generate blog");
+      navigate("/create");
     }
   };
 
@@ -113,10 +213,81 @@ const BlogEditor = () => {
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const charCount = content.length;
 
-  if (isLoading) {
+  if (isLoading || id === "generating") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="max-w-md w-full p-8">
+          <h2 className="text-2xl font-bold mb-8 text-center">Generating Your Blog Post</h2>
+          
+          <div className="space-y-6">
+            {/* Checkpoint 1: Researching keyword */}
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                {generationStep > 1 ? (
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                ) : generationStep === 1 ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                ) : (
+                  <div className="h-6 w-6 rounded-full border-2 border-muted" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-semibold ${generationStep >= 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  1. Researching Keywords
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Analyzing target keywords and gathering latest trends
+                </p>
+              </div>
+            </div>
+
+            {/* Checkpoint 2: Pulling example blogs */}
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                {generationStep > 2 ? (
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                ) : generationStep === 2 ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                ) : (
+                  <div className="h-6 w-6 rounded-full border-2 border-muted" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-semibold ${generationStep >= 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  2. Pulling Example Blogs
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Analyzing competitor content and best practices
+                </p>
+              </div>
+            </div>
+
+            {/* Checkpoint 3: Writing blog post */}
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                {generationStep > 3 ? (
+                  <CheckCircle2 className="h-6 w-6 text-primary" />
+                ) : generationStep === 3 ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                ) : (
+                  <div className="h-6 w-6 rounded-full border-2 border-muted" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-semibold ${generationStep >= 3 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  3. Writing Blog Post
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Crafting SEO-optimized content with your brand voice
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            This may take 30-60 seconds...
+          </div>
+        </div>
       </div>
     );
   }
