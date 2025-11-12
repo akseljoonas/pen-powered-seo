@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,8 @@ const BlogEditor = () => {
   const [activeTab, setActiveTab] = useState("post");
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     checkAuth();
@@ -203,6 +205,81 @@ const BlogEditor = () => {
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from("blog-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("blog-images")
+        .getPublicUrl(fileName);
+
+      // Insert markdown image syntax at cursor position or end
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const cursorPos = textarea.selectionStart;
+        const textBefore = content.substring(0, cursorPos);
+        const textAfter = content.substring(cursorPos);
+        const imageMarkdown = `\n![${file.name}](${publicUrl})\n`;
+        setContent(textBefore + imageMarkdown + textAfter);
+        
+        // Set cursor after inserted image
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            cursorPos + imageMarkdown.length,
+            cursorPos + imageMarkdown.length
+          );
+        }, 0);
+      } else {
+        // Fallback: append to end
+        setContent(prev => prev + `\n![${file.name}](${publicUrl})\n`);
+      }
+
+      toast.success("Image uploaded successfully!");
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast.error(error.message || "Failed to upload image");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const charCount = content.length;
 
@@ -367,6 +444,7 @@ const BlogEditor = () => {
             </div>
           ) : (
             <Textarea
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Click here to start writing..."
@@ -405,12 +483,33 @@ const BlogEditor = () => {
 
                 <div className="space-y-2">
                   <Label>Cover image</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm font-medium text-foreground">Drag an image</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Once you drop an image it will be automatically uploaded
-                    </p>
+                  <div 
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onClick={() => document.getElementById("image-upload")?.click()}
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  >
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInput}
+                      className="hidden"
+                    />
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-10 w-10 text-primary mx-auto mb-2 animate-spin" />
+                        <p className="text-sm font-medium text-foreground">Uploading...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm font-medium text-foreground">Drag an image or click to browse</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Image will be inserted into your blog post
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
